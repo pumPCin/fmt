@@ -299,11 +299,13 @@ if (FMT_PEDANTIC)
   target_compile_options(fmt PRIVATE ${PEDANTIC_COMPILE_FLAGS})
 endif ()
 
-if (cxx_std_11 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-  target_compile_features(fmt PUBLIC cxx_std_11)
-else ()
-  message(WARNING "Feature cxx_std_11 is unknown for the CXX compiler")
-endif ()
+#if (cxx_std_11 IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+#  target_compile_features(fmt PUBLIC cxx_std_11)
+#else ()
+#  message(WARNING "Feature cxx_std_11 is unknown for the CXX compiler")
+#endif ()
+
+target_compile_features(fmt INTERFACE ${FMT_REQUIRED_FEATURES})
 
 target_include_directories(fmt ${FMT_SYSTEM_HEADERS_ATTRIBUTE} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -342,7 +344,8 @@ add_library(fmt-header-only INTERFACE)
 add_library(fmt::fmt-header-only ALIAS fmt-header-only)
 
 target_compile_definitions(fmt-header-only INTERFACE FMT_HEADER_ONLY=1)
-target_compile_features(fmt-header-only INTERFACE cxx_std_11)
+target_compile_features(fmt-header-only INTERFACE ${FMT_REQUIRED_FEATURES})
+#target_compile_features(fmt-header-only INTERFACE cxx_std_11)
 
 target_include_directories(fmt-header-only
   ${FMT_SYSTEM_HEADERS_ATTRIBUTE} INTERFACE
