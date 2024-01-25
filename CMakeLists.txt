@@ -146,7 +146,8 @@ option(FMT_WERROR "Halt the compilation with an error on compiler warnings."
 
 # Options that control generation of various targets.
 option(FMT_DOC "Generate the doc target." ${FMT_MASTER_PROJECT})
-option(FMT_INSTALL "Generate the install target." ON)
+#option(FMT_INSTALL "Generate the install target." ON)
+option(FMT_INSTALL "Generate the install target." ${FMT_MASTER_PROJECT})
 option(FMT_TEST "Generate the test target." ${FMT_MASTER_PROJECT})
 option(FMT_FUZZ "Generate the fuzz target." OFF)
 option(FMT_CUDA_TEST "Generate the cuda-test target." OFF)
@@ -344,8 +345,8 @@ add_library(fmt-header-only INTERFACE)
 add_library(fmt::fmt-header-only ALIAS fmt-header-only)
 
 target_compile_definitions(fmt-header-only INTERFACE FMT_HEADER_ONLY=1)
-target_compile_features(fmt-header-only INTERFACE ${FMT_REQUIRED_FEATURES})
 #target_compile_features(fmt-header-only INTERFACE cxx_std_11)
+target_compile_features(fmt-header-only INTERFACE ${FMT_REQUIRED_FEATURES})
 
 target_include_directories(fmt-header-only
   ${FMT_SYSTEM_HEADERS_ATTRIBUTE} INTERFACE
