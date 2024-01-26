@@ -193,6 +193,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 include(CheckCXXCompilerFlag)
 include(JoinPaths)
 
+list(FIND CMAKE_CXX_COMPILE_FEATURES "cxx_variadic_templates" index)
+if (${index} GREATER -1)
+  # Use cxx_variadic_templates instead of more appropriate cxx_std_11 for
+  # compatibility with older CMake versions.
+  set(FMT_REQUIRED_FEATURES cxx_variadic_templates)
+endif ()
+message(STATUS "Required features: ${FMT_REQUIRED_FEATURES}")
+
 if (FMT_MASTER_PROJECT AND NOT DEFINED CMAKE_CXX_VISIBILITY_PRESET)
   set_verbose(CMAKE_CXX_VISIBILITY_PRESET hidden CACHE STRING
               "Preset for the export of private symbols")
