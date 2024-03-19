@@ -149,11 +149,9 @@ template <typename Char> struct formatter<std::filesystem::path, Char> {
   template <typename FormatContext>
   auto format(const std::filesystem::path& p, FormatContext& ctx) const {
     auto specs = specs_;
-#  ifdef _WIN32
-    auto path_string = !path_type_ ? p.native() : p.generic_wstring();
-#  else
-    auto path_string = !path_type_ ? p.native() : p.generic_string();
-#  endif
+    auto path_string =
+        !path_type_ ? p.native()
+                    : p.generic_string<std::filesystem::path::value_type>();
 
     detail::handle_dynamic_spec<detail::width_checker>(specs.width, width_ref_,
                                                        ctx);
@@ -597,8 +595,8 @@ struct formatter<std::complex<F>, Char> : nested_formatter<F, Char> {
 
     template <typename OutputIt>
     FMT_CONSTEXPR auto operator()(OutputIt out) -> OutputIt {
-      auto format =
-          detail::string_literal<Char, '(', '{', '}', ',', '{', '}', ')'>{};
+      auto format = detail::string_literal<Char, '(', '{', '}', '+', '{', '}',
+                                           'i', ')'>{};
       return fmt::format_to(out, basic_string_view<Char>(format),
                             f->nested(c.real()), f->nested(c.imag()));
     }
