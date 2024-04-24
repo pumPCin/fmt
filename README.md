@@ -1,4 +1,4 @@
-<img src="https://user-images.githubusercontent.com/1.png" alt="{fmt}" width="25%"/>
+{fmt}
 
 [![image](https://github.com/fmtlib/fmt/workflows/linux/badge.svg)](https://github.com/fmtlib/fmt/actions?query=workflow%3Alinux)
 [![image](https://github.com/fmtlib/fmt/workflows/macos/badge.svg)](https://github.com/fmtlib/fmt/actions?query=workflow%3Amacos)
