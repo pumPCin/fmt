@@ -1,4 +1,4 @@
-<img src="https://user-images.githubusercontent.com/576385/156254208-f5b743a9-88cf-439d-b0c0-923d53e8d551.png" alt="{fmt}" width="25%"/>
+<img src="https://user-images.githubusercontent.com/1.png" alt="{fmt}" width="25%"/>
 
 [![image](https://github.com/fmtlib/fmt/workflows/linux/badge.svg)](https://github.com/fmtlib/fmt/actions?query=workflow%3Alinux)
 [![image](https://github.com/fmtlib/fmt/workflows/macos/badge.svg)](https://github.com/fmtlib/fmt/actions?query=workflow%3Amacos)
@@ -9,9 +9,6 @@
 
 **{fmt}** is an open-source formatting library providing a fast and safe
 alternative to C stdio and C++ iostreams.
-
-If you like this project, please consider donating to one of the funds
-that help victims of the war in Ukraine: <https://www.stopputin.net/>.
 
 [Documentation](https://fmt.dev)
 
