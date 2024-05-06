@@ -89,6 +89,35 @@ TEST(ranges_test, format_map) {
   EXPECT_EQ(fmt::format("{:n}", m), "\"one\": 1, \"two\": 2");
 }
 
+struct test_map_value {};
+
+FMT_BEGIN_NAMESPACE
+template <> struct formatter<test_map_value> : formatter<string_view> {
+  auto format(test_map_value, format_context& ctx) const
+      -> format_context::iterator {
+    return formatter<string_view>::format("foo", ctx);
+  }
+};
+
+template <typename K>
+struct formatter<std::pair<K, test_map_value>> : formatter<string_view> {
+  auto format(std::pair<K, test_map_value>, format_context& ctx) const
+      -> format_context::iterator {
+    return ctx.out();
+  }
+};
+
+template <typename K>
+struct is_tuple_formattable<std::pair<K, test_map_value>, char>
+    : std::false_type {};
+
+FMT_END_NAMESPACE
+
+TEST(ranges_test, format_map_custom_pair) {
+  EXPECT_EQ(fmt::format("{}", std::map<int, test_map_value>{{42, {}}}),
+            "{42: \"foo\"}");
+}
+
 TEST(ranges_test, format_set) {
   EXPECT_EQ(fmt::format("{}", std::set<std::string>{"one", "two"}),
             "{\"one\", \"two\"}");
@@ -468,7 +497,7 @@ struct vec {
 
 auto begin(const vec& v) -> const int* { return v.n; }
 auto end(const vec& v) -> const int* { return v.n + 2; }
-}
+}  // namespace adl
 
 TEST(ranges_test, format_join_adl_begin_end) {
   EXPECT_EQ(fmt::format("{}", fmt::join(adl::vec(), "/")), "42/43");
@@ -622,4 +651,57 @@ struct lvalue_qualified_begin_end {
 
 TEST(ranges_test, lvalue_qualified_begin_end) {
   EXPECT_EQ(fmt::format("{}", lvalue_qualified_begin_end{}), "[1, 2, 3, 4, 5]");
+}
+
+#if !defined(__cpp_lib_ranges) || __cpp_lib_ranges <= 202106L
+#  define ENABLE_INPUT_RANGE_JOIN_TEST 0
+#elif FMT_CLANG_VERSION
+#  if FMT_CLANG_VERSION > 1500
+#    define ENABLE_INPUT_RANGE_JOIN_TEST 1
+#  else
+#    define ENABLE_INPUT_RANGE_JOIN_TEST 0
+#  endif
+#else
+#  define ENABLE_INPUT_RANGE_JOIN_TEST 1
+#endif
+
+#if ENABLE_INPUT_RANGE_JOIN_TEST
+TEST(ranges_test, input_range_join) {
+  std::istringstream iss("1 2 3 4 5");
+  auto view = std::views::istream<std::string>(iss);
+  auto joined_view = fmt::join(view.begin(), view.end(), ", ");
+  EXPECT_EQ("1, 2, 3, 4, 5", fmt::format("{}", std::move(joined_view)));
+}
+
+TEST(ranges_test, input_range_join_overload) {
+  std::istringstream iss("1 2 3 4 5");
+  EXPECT_EQ(
+      "1.2.3.4.5",
+      fmt::format("{}", fmt::join(std::views::istream<std::string>(iss), ".")));
+}
+#endif
+
+TEST(ranges_test, std_istream_iterator_join) {
+  std::istringstream iss("1 2 3 4 5");
+  std::istream_iterator<int> first{iss};
+  std::istream_iterator<int> last{};
+  auto joined_view = fmt::join(first, last, ", ");
+  EXPECT_EQ("1, 2, 3, 4, 5", fmt::format("{}", std::move(joined_view)));
+}
+
+TEST(ranges_test, movable_only_istream_iter_join) {
+  // Mirrors c++20 std::ranges::basic_istream_view::iterator
+  struct UncopyableIstreamIter : std::istream_iterator<int> {
+    explicit UncopyableIstreamIter(std::istringstream& iss)
+        : std::istream_iterator<int>{iss} {}
+    UncopyableIstreamIter(const UncopyableIstreamIter&) = delete;
+    UncopyableIstreamIter(UncopyableIstreamIter&&) = default;
+  };
+  static_assert(!std::is_copy_constructible<UncopyableIstreamIter>::value, "");
+
+  std::istringstream iss("1 2 3 4 5");
+  UncopyableIstreamIter first{iss};
+  std::istream_iterator<int> last{};
+  auto joined_view = fmt::join(std::move(first), last, ", ");
+  EXPECT_EQ("1, 2, 3, 4, 5", fmt::format("{}", std::move(joined_view)));
 }
