@@ -1800,7 +1800,7 @@ auto find_escape(const Char* begin, const Char* end)
 
 inline auto find_escape(const char* begin, const char* end)
     -> find_escape_result<char> {
-  if (!is_utf8()) return find_escape<char>(begin, end);
+  if (!use_utf8()) return find_escape<char>(begin, end);
   auto result = find_escape_result<char>{end, nullptr, 0};
   for_each_codepoint(string_view(begin, to_unsigned(end - begin)),
                      [&](uint32_t cp, string_view sv) {
@@ -4000,7 +4000,9 @@ struct formatter<T, Char, enable_if_t<detail::has_format_as<T>::value>>
   template <typename FormatContext>
   auto format(const T& value, FormatContext& ctx) const -> decltype(ctx.out()) {
     using base = formatter<detail::format_as_t<T>, Char>;
-    return base::format(format_as(value), ctx);
+    // format functions expect lvalue refs, not rvalues
+    auto&& val = format_as(value);
+    return base::format(val, ctx);
   }
 };
 
