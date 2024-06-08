@@ -1,7 +1,7 @@
 # Format String Syntax
 
-[Formatting functions](api.md) such as `fmt::format` and `fmt::print` use the
-same format string syntax described in this section.
+Formatting functions such as [`fmt::format`](api.md#format) and [`fmt::print`](
+api.md#print) use the same format string syntax described in this section.
 
 Format strings contain "replacement fields" surrounded by curly braces `{}`.
 Anything that is not contained in braces is considered literal text, which is
@@ -11,15 +11,15 @@ the literal text, it can be escaped by doubling: `{{` and `}}`.
 The grammar for a replacement field is as follows:
 
 <a id="replacement-field"></a>
-<pre>
-replacement_field ::= "{" [arg_id] [":" (<a href="#format-spec">format_spec</a
-  > | <a href="#chrono-format-spec">chrono_format_spec</a>)] "}"
+<pre><code class="language-json"
+>replacement_field ::= "{" [arg_id] [":" (<a href="#format-spec"
+  >format_spec</a> | <a href="#chrono-format-spec">chrono_format_spec</a>)] "}"
 arg_id            ::= integer | identifier
 integer           ::= digit+
 digit             ::= "0"..."9"
 identifier        ::= id_start id_continue*
 id_start          ::= "a"..."z" | "A"..."Z" | "_"
-id_continue       ::= id_start | digit
+id_continue       ::= id_start | digit</code>
 </pre>
 
 In less formal terms, the replacement field can start with an *arg_id* that
@@ -73,8 +73,8 @@ supported by the numeric types.
 The general form of a *standard format specifier* is:
 
 <a id="format-spec"></a>
-<pre>
-format_spec ::= [[fill]align][sign]["#"]["0"][width]["." precision]["L"][type]
+<pre><code class="language-json"
+>format_spec ::= [[fill]align][sign]["#"]["0"][width]["." precision]["L"][type]
 fill        ::= &lt;a character other than '{' or '}'>
 align       ::= "<" | ">" | "^"
 sign        ::= "+" | "-" | " "
@@ -83,7 +83,7 @@ width       ::= <a href="#replacement-field">integer</a> | "{" [<a
 precision   ::= <a href="#replacement-field">integer</a> | "{" [<a
   href="#replacement-field">arg_id</a>] "}"
 type        ::= "a" | "A" | "b" | "B" | "c" | "d" | "e" | "E" | "f" | "F" |
-                "g" | "G" | "o" | "p" | "s" | "x" | "X" | "?"
+                "g" | "G" | "o" | "p" | "s" | "x" | "X" | "?"</code>
 </pre>
 
 The *fill* character can be any Unicode code point other than `'{'` or `'}'`.
@@ -400,12 +400,12 @@ Format specifications for chrono duration and time point types as well as
 `std::tm` have the following syntax:
 
 <a id="chrono-format-spec"></a>
-<pre>
-chrono_format_spec ::= [[<a href="#format-spec">fill</a>]<a href="#format-spec"
+<pre><code class="language-json"
+>chrono_format_spec ::= [[<a href="#format-spec">fill</a>]<a href="#format-spec"
   >align</a>][<a href="#format-spec">width</a>]["." <a href="#format-spec"
   >precision</a>][chrono_specs]
-chrono_specs       ::= conversion_spec | <!--
-                    -->chrono_specs (conversion_spec | literal_char)
+chrono_specs       ::= conversion_spec |
+                       chrono_specs (conversion_spec | literal_char)
 conversion_spec    ::= "%" [padding_modifier] [locale_modifier] chrono_type
 literal_char       ::= &lt;a character other than '{', '}' or '%'>
 padding_modifier   ::= "-" | "_"  | "0"
@@ -414,7 +414,7 @@ chrono_type        ::= "a" | "A" | "b" | "B" | "c" | "C" | "d" | "D" | "e" |
                        "F" | "g" | "G" | "h" | "H" | "I" | "j" | "m" | "M" |
                        "n" | "p" | "q" | "Q" | "r" | "R" | "S" | "t" | "T" |
                        "u" | "U" | "V" | "w" | "W" | "x" | "X" | "y" | "Y" |
-                       "z" | "Z" | "%"
+                       "z" | "Z" | "%"</code>
 </pre>
 
 Literal chars are copied unchanged to the output. Precision is valid only
@@ -718,8 +718,8 @@ These modifiers are only supported for the `'H'`, `'I'`, `'M'`, `'S'`, `'U'`,
 
 Format specifications for range types have the following syntax:
 
-<pre>
-range_format_spec ::= ["n"][range_type][range_underlying_spec]
+<pre><code class="language-json"
+>range_format_spec ::= ["n"][range_type][range_underlying_spec]</code>
 </pre>
 
 The `'n'` option formats the range without the opening and closing brackets.

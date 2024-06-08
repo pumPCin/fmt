@@ -149,7 +149,6 @@ import std;
 #  define FMT_USE_NONTYPE_TEMPLATE_ARGS 0
 #endif
 
-// Detect C++20 concepts
 #ifdef FMT_USE_CONCEPTS
 // Use the provided definition.
 #elif defined(__cpp_concepts)
@@ -834,7 +833,7 @@ class compile_parse_context : public basic_format_parse_context<Char> {
 };
 
 /// A contiguous memory buffer with an optional growing ability. It is an
-// internal class and shouldn't be used directly, only via `memory_buffer`.
+/// internal class and shouldn't be used directly, only via `memory_buffer`.
 template <typename T> class buffer {
  private:
   T* ptr_;
@@ -889,14 +888,14 @@ template <typename T> class buffer {
   /// Clears this buffer.
   void clear() { size_ = 0; }
 
-  // Tries resizing the buffer to contain *count* elements. If T is a POD type
+  // Tries resizing the buffer to contain `count` elements. If T is a POD type
   // the new elements may not be initialized.
   FMT_CONSTEXPR void try_resize(size_t count) {
     try_reserve(count);
     size_ = count <= capacity_ ? count : capacity_;
   }
 
-  // Tries increasing the buffer capacity to *new_capacity*. It can increase the
+  // Tries increasing the buffer capacity to `new_capacity`. It can increase the
   // capacity by a smaller amount than requested but guarantees there is space
   // for at least one additional element either by increasing the capacity or by
   // flushing the buffer if it is full.
@@ -1817,10 +1816,8 @@ FMT_DEPRECATED FMT_CONSTEXPR auto visit_format_arg(
  * should only be used as a parameter type in type-erased functions such as
  * `vformat`:
  *
- * ```
- * void vlog(string_view format_str, format_args args);  // OK
- * format_args args = make_format_args();  // Error: dangling reference
- * ```
+ *     void vlog(fmt::string_view fmt, fmt::format_args args);  // OK
+ *     fmt::format_args args = fmt::make_format_args();  // Dangling reference
  */
 template <typename Context> class basic_format_args {
  public:
@@ -1956,7 +1953,7 @@ class context {
   // Returns an iterator to the beginning of the output range.
   FMT_CONSTEXPR auto out() -> iterator { return out_; }
 
-  // Advances the begin iterator to ``it``.
+  // Advances the begin iterator to `it`.
   void advance_to(iterator) {}
 
   FMT_CONSTEXPR auto locale() -> detail::locale_ref { return loc_; }
@@ -1985,12 +1982,9 @@ concept formattable = is_formattable<remove_reference_t<T>, Char>::value;
 #endif
 
 /**
-  \rst
-  Constructs an object that stores references to arguments and can be implicitly
-  converted to `~fmt::format_args`. `Context` can be omitted in which case it
-  defaults to `~fmt::format_context`. See `~fmt::arg` for lifetime
-  considerations.
-  \endrst
+ * Constructs an object that stores references to arguments and can be
+ * implicitly converted to `format_args`. `Context` can be omitted in which case
+ * it defaults to `format_context`. See `arg` for lifetime considerations.
  */
 // Take arguments by lvalue references to avoid some lifetime issues, e.g.
 //   auto args = make_format_args(std::string());
@@ -2019,13 +2013,13 @@ constexpr auto make_format_args(T&... args)
 #endif
 
 /**
-  Returns a named argument to be used in a formatting function.
-  It should only be used in a call to a formatting function or
-  `dynamic_format_arg_store::push_back`.
-
-  **Example**::
-
-    fmt::print("Elapsed time: {s:.2f} seconds", fmt::arg("s", 1.23));
+ * Returns a named argument to be used in a formatting function.
+ * It should only be used in a call to a formatting function or
+ * `dynamic_format_arg_store::push_back`.
+ *
+ * **Example**:
+ *
+ *     fmt::print("Elapsed time: {s:.2f} seconds", fmt::arg("s", 1.23));
  */
 template <typename Char, typename T>
 inline auto arg(const Char* name, const T& arg) -> detail::named_arg<Char, T> {
@@ -2034,7 +2028,7 @@ inline auto arg(const Char* name, const T& arg) -> detail::named_arg<Char, T> {
 }
 FMT_END_EXPORT
 
-/// An alias to `basic_format_args<format_context>`.
+/// An alias for `basic_format_args<format_context>`.
 // A separate type would result in shorter symbols but break ABI compatibility
 // between clang and gcc on ARM (#1919).
 FMT_EXPORT using format_args = basic_format_args<format_context>;
@@ -2882,14 +2876,12 @@ inline auto runtime(string_view s) -> string_view { return s; }
 template <typename... Args>
 using format_string = basic_format_string<char, type_identity_t<Args>...>;
 /**
-  \rst
-  Creates a runtime format string.
-
-  **Example**::
-
-    // Check format string at runtime instead of compile-time.
-    fmt::print(fmt::runtime("{:d}"), "I am not a number");
-  \endrst
+ * Creates a runtime format string.
+ *
+ * **Example**:
+ *
+ *     // Check format string at runtime instead of compile-time.
+ *     fmt::print(fmt::runtime("{:d}"), "I am not a number");
  */
 inline auto runtime(string_view s) -> runtime_format_string<> { return {{s}}; }
 #endif
@@ -2906,16 +2898,14 @@ auto vformat_to(OutputIt&& out, string_view fmt, format_args args)
 }
 
 /**
- \rst
- Formats ``args`` according to specifications in ``fmt``, writes the result to
- the output iterator ``out`` and returns the iterator past the end of the output
- range. `format_to` does not append a terminating null character.
-
- **Example**::
-
-   auto out = std::vector<char>();
-   fmt::format_to(std::back_inserter(out), "{}", 42);
- \endrst
+ * Formats `args` according to specifications in `fmt`, writes the result to
+ * the output iterator `out` and returns the iterator past the end of the output
+ * range. `format_to` does not append a terminating null character.
+ *
+ * **Example**:
+ *
+ *     auto out = std::vector<char>();
+ *     fmt::format_to(std::back_inserter(out), "{}", 42);
  */
 template <typename OutputIt, typename... T,
           FMT_ENABLE_IF(detail::is_output_iterator<remove_cvref_t<OutputIt>,
@@ -2926,9 +2916,9 @@ FMT_INLINE auto format_to(OutputIt&& out, format_string<T...> fmt, T&&... args)
 }
 
 template <typename OutputIt> struct format_to_n_result {
-  /** Iterator past the end of the output range. */
+  /// Iterator past the end of the output range.
   OutputIt out;
-  /** Total (not truncated) output size. */
+  /// Total (not truncated) output size.
   size_t size;
 };
 
@@ -2943,12 +2933,10 @@ auto vformat_to_n(OutputIt out, size_t n, string_view fmt, format_args args)
 }
 
 /**
-  \rst
-  Formats ``args`` according to specifications in ``fmt``, writes up to ``n``
-  characters of the result to the output iterator ``out`` and returns the total
-  (not truncated) output size and the iterator past the end of the output range.
-  `format_to_n` does not append a terminating null character.
-  \endrst
+ * Formats `args` according to specifications in `fmt`, writes up to `n`
+ * characters of the result to the output iterator `out` and returns the total
+ * (not truncated) output size and the iterator past the end of the output
+ * range. `format_to_n` does not append a terminating null character.
  */
 template <typename OutputIt, typename... T,
           FMT_ENABLE_IF(detail::is_output_iterator<OutputIt, char>::value)>
@@ -2959,9 +2947,9 @@ FMT_INLINE auto format_to_n(OutputIt out, size_t n, format_string<T...> fmt,
 
 template <typename OutputIt, typename Sentinel = OutputIt>
 struct format_to_result {
-  /** Iterator pointing to just after the last successful write in the range. */
+  /// Iterator pointing to just after the last successful write in the range.
   OutputIt out;
-  /** Specifies if the output was truncated. */
+  /// Specifies if the output was truncated.
   bool truncated;
 
   FMT_CONSTEXPR operator OutputIt&() & noexcept { return out; }
@@ -2985,7 +2973,7 @@ FMT_INLINE auto format_to(char (&out)[N], format_string<T...> fmt, T&&... args)
   return {result.out, result.size > N};
 }
 
-/** Returns the number of chars in the output of ``format(fmt, args...)``. */
+/// Returns the number of chars in the output of `format(fmt, args...)`.
 template <typename... T>
 FMT_NODISCARD FMT_INLINE auto formatted_size(format_string<T...> fmt,
                                              T&&... args) -> size_t {
@@ -3004,9 +2992,8 @@ FMT_API void vprintln(FILE* f, string_view fmt, format_args args);
  * to `stdout`.
  *
  * **Example**:
- * ```
- * fmt::print("Elapsed time: {0:.2f} seconds", 1.23);
- * ```
+ *
+ *     fmt::print("The answer is {}.", 42);
  */
 template <typename... T>
 FMT_INLINE void print(format_string<T...> fmt, T&&... args) {
@@ -3032,10 +3019,8 @@ FMT_INLINE void print(FILE* f, format_string<T...> fmt, T&&... args) {
                                     : vprint(f, fmt, vargs);
 }
 
-/**
-  Formats ``args`` according to specifications in ``fmt`` and writes the
-  output to the file ``f`` followed by a newline.
- */
+/// Formats `args` according to specifications in `fmt` and writes the output
+/// to the file `f` followed by a newline.
 template <typename... T>
 FMT_INLINE void println(FILE* f, format_string<T...> fmt, T&&... args) {
   const auto& vargs = fmt::make_format_args(args...);
@@ -3043,10 +3028,8 @@ FMT_INLINE void println(FILE* f, format_string<T...> fmt, T&&... args) {
                             : detail::vprint_mojibake(f, fmt, vargs, true);
 }
 
-/**
-  Formats ``args`` according to specifications in ``fmt`` and writes the output
-  to ``stdout`` followed by a newline.
- */
+/// Formats `args` according to specifications in `fmt` and writes the output
+/// to `stdout` followed by a newline.
 template <typename... T>
 FMT_INLINE void println(format_string<T...> fmt, T&&... args) {
   return fmt::println(stdout, fmt, static_cast<T&&>(args)...);
