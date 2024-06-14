@@ -33,9 +33,11 @@ jobs:
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
+      run: $GITHUB_WORKSPACE/support/mkdocs deploy dev
+
+    - name: Deploy
       env:
-        KEY: ${{secrets.KEY}}
-      run: |
-        $GITHUB_WORKSPACE/support/mkdocs deploy dev
-        cd $GITHUB_WORKSPACE/build/fmt.dev
-        git push https://$KEY@github.com/fmtlib/fmt.dev.git
+        KEY: "${{secrets.KEY}}"
+      if: env.KEY != ''
+      working-directory: ${{runner.workspace}}/fmt/build/fmt.dev
+      run: git push https://$KEY@github.com/fmtlib/fmt.dev.git
