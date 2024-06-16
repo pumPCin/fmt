@@ -3,10 +3,11 @@
 
 import os
 from pathlib import Path
-import xml.etree.ElementTree as et
-from mkdocstrings.handlers.base import BaseHandler
 from typing import Any, List, Mapping, Optional
 from subprocess import CalledProcessError, PIPE, Popen, STDOUT
+import xml.etree.ElementTree as et
+
+from mkdocstrings.handlers.base import BaseHandler
 
 class Definition:
   '''A definition extracted by Doxygen.'''
@@ -158,9 +159,10 @@ class CxxHandler(BaseHandler):
     # Run doxygen.
     cmd = ['doxygen', '-']
     doc_dir = Path(__file__).parents[3]
-    include_dir = os.path.join(os.path.dirname(doc_dir), 'include', 'fmt')
+    top_dir = os.path.dirname(doc_dir)
+    include_dir = os.path.join(top_dir, 'include', 'fmt')
     self._ns2doxyxml = {}
-    self._doxyxml_dir = 'doxyxml'
+    self._doxyxml_dir = os.path.join(top_dir, 'build', 'doxyxml')
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     out, _ = p.communicate(input=r'''
         PROJECT_NAME      = fmt
@@ -288,6 +290,8 @@ class CxxHandler(BaseHandler):
     return self.collect_compound(identifier, cls)
 
   def render(self, d: Definition, config: dict) -> str:
+    if d.id is not None:
+      self.do_heading('', 0, id=d.id)
     text = '<div class="docblock">\n'
     text += render_decl(d)
     text += '<div class="docblock-desc">\n'
