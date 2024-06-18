@@ -8,6 +8,9 @@
 #ifndef FMT_STD_H_
 #define FMT_STD_H_
 
+#include "format.h"
+#include "ostream.h"
+
 #ifndef FMT_MODULE
 #  include <atomic>
 #  include <bitset>
@@ -20,17 +23,8 @@
 #  include <typeinfo>
 #  include <utility>
 #  include <vector>
-#endif
 
-#include "format.h"
-#include "ostream.h"
-
-#if FMT_HAS_INCLUDE(<version>)
-#  include <version>
-#endif
-
-#ifndef FMT_MODULE
-// Checking FMT_CPLUSPLUS for warning suppression in MSVC.
+// Check FMT_CPLUSPLUS to suppress a bogus warning in MSVC.
 #  if FMT_CPLUSPLUS >= 201703L
 #    if FMT_HAS_INCLUDE(<filesystem>)
 #      include <filesystem>
@@ -41,15 +35,17 @@
 #    if FMT_HAS_INCLUDE(<optional>)
 #      include <optional>
 #    endif
+#    if FMT_HAS_INCLUDE(<source_location>)
+#      include <source_location>
+#    endif
 #  endif
-
-#  if FMT_HAS_INCLUDE(<expected>) && FMT_CPLUSPLUS > 202002L
+#  if FMT_CPLUSPLUS > 202002L && FMT_HAS_INCLUDE(<expected>)
 #    include <expected>
 #  endif
+#endif  // FMT_MODULE
 
-#  if FMT_CPLUSPLUS > 201703L && FMT_HAS_INCLUDE(<source_location>)
-#    include <source_location>
-#  endif
+#if FMT_HAS_INCLUDE(<version>)
+#  include <version>
 #endif
 
 // GCC 4 does not support FMT_HAS_INCLUDE.
