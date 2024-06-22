@@ -35,9 +35,11 @@
 #    if FMT_HAS_INCLUDE(<optional>)
 #      include <optional>
 #    endif
-#    if FMT_HAS_INCLUDE(<source_location>)
-#      include <source_location>
-#    endif
+#  endif
+// Use > instead of >= in the version check because <source_location> may be
+// available after C++17 but before C++20 is marked as implemented.
+#  if FMT_CPLUSPLUS > 201703L && FMT_HAS_INCLUDE(<source_location>)
+#    include <source_location>
 #  endif
 #  if FMT_CPLUSPLUS > 202002L && FMT_HAS_INCLUDE(<expected>)
 #    include <expected>
@@ -156,6 +158,22 @@ template <typename Char> struct formatter<std::filesystem::path, Char> {
                          specs);
   }
 };
+
+class path : public std::filesystem::path {
+ public:
+  auto display_string() const -> std::string {
+    const std::filesystem::path& base = *this;
+    return fmt::format(FMT_STRING("{}"), base);
+  }
+  auto system_string() const -> std::string { return string(); }
+
+  auto generic_display_string() const -> std::string {
+    const std::filesystem::path& base = *this;
+    return fmt::format(FMT_STRING("{:g}"), base);
+  }
+  auto generic_system_string() const -> std::string { return generic_string(); }
+};
+
 FMT_END_NAMESPACE
 #endif  // FMT_CPP_LIB_FILESYSTEM
 
