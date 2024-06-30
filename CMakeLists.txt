@@ -476,12 +476,13 @@ function(add_doc_target)
       ${CMAKE_COMMAND}
         -E env PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/support/python
         ${MKDOCS} build -f ${CMAKE_CURRENT_SOURCE_DIR}/support/mkdocs.yml
-                        --site-dir ${CMAKE_CURRENT_BINARY_DIR}/site
+        # MkDocs requires the site dir to be outside of the doc dir.
+                        --site-dir ${CMAKE_CURRENT_BINARY_DIR}/doc-html
                         --no-directory-urls
     SOURCES ${sources})
 
   include(GNUInstallDirs)
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/support/site/
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc-html/
           DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/fmt OPTIONAL)
 endfunction()
 
@@ -516,8 +517,7 @@ if (FMT_MASTER_PROJECT AND EXISTS ${gitignore})
     string(REPLACE "*" ".*" line "${line}")
     set(ignored_files ${ignored_files} "${line}$" "${line}/")
   endforeach ()
-  set(ignored_files ${ignored_files}
-    /.git /breathe /format-benchmark sphinx/ .buildinfo .doctrees)
+  set(ignored_files ${ignored_files} /.git /build)
 
   set(CPACK_SOURCE_GENERATOR ZIP)
   set(CPACK_SOURCE_IGNORE_FILES ${ignored_files})
