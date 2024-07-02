@@ -1,4 +1,4 @@
-# 11.0.0 - TBD
+# 11.0.0 - 2024-07-01
 
 - Added `fmt/base.h` which provides a subset of the API with minimal include
   dependencies and enough functionality to replace all uses of the `printf`
@@ -72,7 +72,7 @@
   fmt::print (11.0)  51.3 ns         51.0 ns     13846580
   ```
 
-- Improved safety of `fmt::format_to` when writting to an array
+- Improved safety of `fmt::format_to` when writing to an array
   (https://github.com/fmtlib/fmt/pull/3805).
   For example ([godbolt](https://www.godbolt.org/z/cYrn8dWY8)):
 
@@ -81,7 +81,7 @@
   auto result = fmt::format_to(volkswagen, "elephant");
   ```
 
-  no longer results in a buffer oveflow. Instead the output will be truncated
+  no longer results in a buffer overflow. Instead the output will be truncated
   and you can get the end iterator and whether truncation occurred from the
   `result` object. Thanks @ThePhD.
 
@@ -172,7 +172,7 @@
 - Moved range and iterator overloads of `fmt::join` to `fmt/ranges.h`, next
   to other overloads.
 
-- Fixed hanling of types with `begin` returning `void` such as Eigen matrices
+- Fixed handling of types with `begin` returning `void` such as Eigen matrices
   (https://github.com/fmtlib/fmt/issues/3839,
   https://github.com/fmtlib/fmt/pull/3964). Thanks @Arghnews.
 
@@ -223,7 +223,7 @@
 - Improved named argument validation
   (https://github.com/fmtlib/fmt/issues/3817).
 
-- Disabled copy contruction/assignment for `fmt::format_arg_store` and
+- Disabled copy construction/assignment for `fmt::format_arg_store` and
   fixed moved construction (https://github.com/fmtlib/fmt/pull/3833).
   Thanks @ivafanas.
 
