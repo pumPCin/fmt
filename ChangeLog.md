@@ -1,4 +1,4 @@
-# 11.0.1 - TBD
+# 11.0.1 - 2024-07-05
 
 - Fixed version number in the inline namespace
   (https://github.com/fmtlib/fmt/issues/4047).
@@ -8,6 +8,10 @@
 
 - Fixed deprecated `visit_format_arg` (https://github.com/fmtlib/fmt/pull/4043).
   Thanks @nebkat.
+
+- Fixed handling of a sign and improved the `std::complex` formater
+  (https://github.com/fmtlib/fmt/pull/4034,
+  https://github.com/fmtlib/fmt/pull/4050). Thanks @tesch1 and @phprus.
 
 - Removed a redundant check in the formatter for `std::expected`
   (https://github.com/fmtlib/fmt/pull/4040). Thanks @phprus.
