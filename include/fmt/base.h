@@ -474,14 +474,22 @@ FMT_CONSTEXPR auto compare(const Char* s1, const Char* s2, std::size_t n)
   return 0;
 }
 
+namespace adl {
+using namespace std;
+
+template <typename Container>
+auto invoke_back_inserter()
+    -> decltype(back_inserter(std::declval<Container&>()));
+}  // namespace adl
+
 template <typename It, typename Enable = std::true_type>
 struct is_back_insert_iterator : std::false_type {};
+
 template <typename It>
 struct is_back_insert_iterator<
-    It,
-    bool_constant<std::is_same<
-        decltype(back_inserter(std::declval<typename It::container_type&>())),
-        It>::value>> : std::true_type {};
+    It, bool_constant<std::is_same<
+            decltype(adl::invoke_back_inserter<typename It::container_type>()),
+            It>::value>> : std::true_type {};
 
 // Extracts a reference to the container from *insert_iterator.
 template <typename OutputIt>
@@ -612,11 +620,12 @@ namespace detail {
 // to it, deducing Char. Explicitly convertible types such as the ones returned
 // from FMT_STRING are intentionally excluded.
 template <typename Char, FMT_ENABLE_IF(is_char<Char>::value)>
-auto to_string_view(const Char* s) -> basic_string_view<Char> {
+constexpr auto to_string_view(const Char* s) -> basic_string_view<Char> {
   return s;
 }
 template <typename T, FMT_ENABLE_IF(is_std_string_like<T>::value)>
-auto to_string_view(const T& s) -> basic_string_view<typename T::value_type> {
+constexpr auto to_string_view(const T& s)
+    -> basic_string_view<typename T::value_type> {
   return s;
 }
 template <typename Char>
@@ -1158,6 +1167,7 @@ template <typename T> class basic_appender {
   using difference_type = ptrdiff_t;
   using pointer = T*;
   using reference = T&;
+  using container_type = detail::buffer<T>;
   FMT_UNCHECKED_ITERATOR(basic_appender);
 
   FMT_CONSTEXPR basic_appender(detail::buffer<T>& buf) : buffer_(&buf) {}
@@ -1174,6 +1184,8 @@ template <typename T> class basic_appender {
 using appender = basic_appender<char>;
 
 namespace detail {
+template <typename T>
+struct is_back_insert_iterator<basic_appender<T>> : std::true_type {};
 
 template <typename T, typename Enable = void>
 struct locking : std::true_type {};
@@ -1190,12 +1202,6 @@ FMT_CONSTEXPR inline auto is_locking() -> bool {
 }
 
 // An optimized version of std::copy with the output value type (T).
-template <typename T, typename InputIt>
-auto copy(InputIt begin, InputIt end, appender out) -> appender {
-  get_container(out).append(begin, end);
-  return out;
-}
-
 template <typename T, typename InputIt, typename OutputIt,
           FMT_ENABLE_IF(is_back_insert_iterator<OutputIt>::value)>
 auto copy(InputIt begin, InputIt end, OutputIt out) -> OutputIt {
@@ -1239,12 +1245,25 @@ constexpr auto has_const_formatter() -> bool {
   return has_const_formatter_impl<Context>(static_cast<T*>(nullptr));
 }
 
+template <typename It, typename Enable = std::true_type>
+struct is_buffer_appender : std::false_type {};
+template <typename It>
+struct is_buffer_appender<
+    It, bool_constant<
+            is_back_insert_iterator<It>::value &&
+            std::is_base_of<buffer<typename It::container_type::value_type>,
+                            typename It::container_type>::value>>
+    : std::true_type {};
+
 // Maps an output iterator to a buffer.
-template <typename T, typename OutputIt>
+template <typename T, typename OutputIt,
+          FMT_ENABLE_IF(!is_buffer_appender<OutputIt>::value)>
 auto get_buffer(OutputIt out) -> iterator_buffer<OutputIt, T> {
   return iterator_buffer<OutputIt, T>(out);
 }
-template <typename T> auto get_buffer(basic_appender<T> out) -> buffer<T>& {
+template <typename T, typename OutputIt,
+          FMT_ENABLE_IF(is_buffer_appender<OutputIt>::value)>
+auto get_buffer(OutputIt out) -> buffer<T>& {
   return get_container(out);
 }
 
