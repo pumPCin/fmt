@@ -467,6 +467,7 @@ template <typename Char> FMT_CONSTEXPR auto length(const Char* s) -> size_t {
 template <typename Char>
 FMT_CONSTEXPR auto compare(const Char* s1, const Char* s2, std::size_t n)
     -> int {
+  if (!is_constant_evaluated() && sizeof(Char) == 1) return memcmp(s1, s2, n);
   for (; n != 0; ++s1, ++s2, --n) {
     if (*s1 < *s2) return -1;
     if (*s1 > *s2) return 1;
@@ -929,12 +930,9 @@ template <typename T> class buffer {
       try_reserve(size_ + count);
       auto free_cap = capacity_ - size_;
       if (free_cap < count) count = free_cap;
-      if (std::is_same<T, U>::value) {
-        memcpy(ptr_ + size_, begin, count * sizeof(T));
-      } else {
-        T* out = ptr_ + size_;
-        for (size_t i = 0; i < count; ++i) out[i] = begin[i];
-      }
+      // A loop is faster than memcpy on small sizes.
+      T* out = ptr_ + size_;
+      for (size_t i = 0; i < count; ++i) out[i] = begin[i];
       size_ += count;
       begin += count;
     }
@@ -1214,14 +1212,6 @@ template <typename T, typename InputIt, typename OutputIt,
 FMT_CONSTEXPR auto copy(InputIt begin, InputIt end, OutputIt out) -> OutputIt {
   while (begin != end) *out++ = static_cast<T>(*begin++);
   return out;
-}
-
-template <typename T>
-FMT_CONSTEXPR auto copy(const T* begin, const T* end, T* out) -> T* {
-  if (is_constant_evaluated()) return copy<T, const T*, T*>(begin, end, out);
-  auto size = to_unsigned(end - begin);
-  if (size > 0) memcpy(out, begin, size * sizeof(T));
-  return out + size;
 }
 
 template <typename T, typename V, typename OutputIt>
@@ -1786,7 +1776,7 @@ template <typename Context> class basic_format_arg {
    * `vis(value)` will be called with the value of type `double`.
    */
   template <typename Visitor>
-  FMT_CONSTEXPR auto visit(Visitor&& vis) const -> decltype(vis(0)) {
+  FMT_CONSTEXPR FMT_INLINE auto visit(Visitor&& vis) const -> decltype(vis(0)) {
     switch (type_) {
     case detail::type::none_type:
       break;
