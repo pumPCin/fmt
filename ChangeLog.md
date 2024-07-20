@@ -1,11 +1,11 @@
-# 11.0.2 - TBD
+# 11.0.2 - 2024-07-20
 
 - Fixed compatibility with non-POSIX systems
   (https://github.com/fmtlib/fmt/issues/4054,
   https://github.com/fmtlib/fmt/issues/4060).
 
 - Fixed performance regressions when using `std::back_insert_iterator` with
-  `fmt::format_to`.
+  `fmt::format_to` (https://github.com/fmtlib/fmt/issues/4070).
 
 - Fixed handling of `std::generator` and move-only iterators
   (https://github.com/fmtlib/fmt/issues/4053,
@@ -21,6 +21,9 @@
 
 - Made `Glib::ustring` not be confused with `std::string`
   (https://github.com/fmtlib/fmt/issues/4052).
+
+- Made `fmt::context` iterator compatible with STL algorithms that rely on
+  iterator category (https://github.com/fmtlib/fmt/issues/4079).
 
 # 11.0.1 - 2024-07-05
 
