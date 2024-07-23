@@ -1283,45 +1283,49 @@ FMT_CONSTEXPR20 FMT_INLINE void copy2(Char* dst, const char* src) {
   *dst = static_cast<Char>(*src);
 }
 
-template <typename Iterator> struct format_decimal_result {
-  Iterator begin;
-  Iterator end;
-};
-
-// Formats a decimal unsigned integer value writing into out pointing to a
-// buffer of specified size. The caller must ensure that the buffer is large
-// enough.
+// Formats a decimal unsigned integer value writing to out pointing to a buffer
+// of specified size. The caller must ensure that the buffer is large enough.
 template <typename Char, typename UInt>
-FMT_CONSTEXPR20 auto format_decimal(Char* out, UInt value, int size)
-    -> format_decimal_result<Char*> {
+FMT_CONSTEXPR20 auto do_format_decimal(Char* out, UInt value, int size)
+    -> Char* {
   FMT_ASSERT(size >= count_digits(value), "invalid digit count");
-  out += size;
-  Char* end = out;
+  unsigned n = to_unsigned(size);
   while (value >= 100) {
     // Integer division is slow so do it for a group of two digits instead
     // of for every digit. The idea comes from the talk by Alexandrescu
     // "Three Optimization Tips for C++". See speed-test for a comparison.
-    out -= 2;
-    copy2(out, digits2(static_cast<size_t>(value % 100)));
+    n -= 2;
+    copy2(out + n, digits2(static_cast<unsigned>(value % 100)));
     value /= 100;
   }
-  if (value < 10) {
-    *--out = static_cast<Char>('0' + value);
-    return {out, end};
+  if (value >= 10) {
+    n -= 2;
+    copy2(out + n, digits2(static_cast<unsigned>(value)));
+  } else {
+    out[--n] = static_cast<Char>('0' + value);
   }
-  out -= 2;
-  copy2(out, digits2(static_cast<size_t>(value)));
-  return {out, end};
+  return out + n;
 }
 
-template <typename Char, typename UInt, typename Iterator,
-          FMT_ENABLE_IF(!std::is_pointer<remove_cvref_t<Iterator>>::value)>
-FMT_CONSTEXPR inline auto format_decimal(Iterator out, UInt value, int size)
-    -> format_decimal_result<Iterator> {
+template <typename Char, typename UInt>
+FMT_CONSTEXPR FMT_INLINE auto format_decimal(Char* out, UInt value,
+                                             int num_digits) -> Char* {
+  do_format_decimal(out, value, num_digits);
+  return out + num_digits;
+}
+
+template <typename Char, typename UInt, typename OutputIt,
+          FMT_ENABLE_IF(is_back_insert_iterator<OutputIt>::value)>
+FMT_CONSTEXPR auto format_decimal(OutputIt out, UInt value, int num_digits)
+    -> OutputIt {
+  if (auto ptr = to_pointer<Char>(out, to_unsigned(num_digits))) {
+    do_format_decimal(ptr, value, num_digits);
+    return out;
+  }
   // Buffer is large enough to hold all digits (digits10 + 1).
-  Char buffer[digits10<UInt>() + 1] = {};
-  auto end = format_decimal(buffer, value, size).end;
-  return {out, detail::copy_noinline<Char>(buffer, end, out)};
+  char buffer[digits10<UInt>() + 1] = {};
+  do_format_decimal(buffer, value, num_digits);
+  return detail::copy_noinline<Char>(buffer, buffer + num_digits, out);
 }
 
 template <unsigned BASE_BITS, typename Char, typename UInt>
@@ -1338,9 +1342,9 @@ FMT_CONSTEXPR auto format_uint(Char* buffer, UInt value, int num_digits,
   return end;
 }
 
-template <unsigned BASE_BITS, typename Char, typename It, typename UInt>
-FMT_CONSTEXPR inline auto format_uint(It out, UInt value, int num_digits,
-                                      bool upper = false) -> It {
+template <unsigned BASE_BITS, typename Char, typename OutputIt, typename UInt>
+FMT_CONSTEXPR inline auto format_uint(OutputIt out, UInt value, int num_digits,
+                                      bool upper = false) -> OutputIt {
   if (auto ptr = to_pointer<Char>(out, to_unsigned(num_digits))) {
     format_uint<BASE_BITS>(ptr, value, num_digits, upper);
     return out;
@@ -2167,7 +2171,7 @@ FMT_CONSTEXPR FMT_INLINE auto write_int(OutputIt out, write_int_arg<T> arg,
     int num_digits = count_digits(abs_value);
     return write_int<Char>(
         out, num_digits, prefix, specs, [=](reserve_iterator<OutputIt> it) {
-          return format_decimal<Char>(it, abs_value, num_digits).end;
+          return format_decimal<Char>(it, abs_value, num_digits);
         });
   }
   case presentation_type::hex: {
@@ -2235,46 +2239,6 @@ FMT_CONSTEXPR FMT_INLINE auto write(OutputIt out, T value,
                          loc);
 }
 
-// An output iterator that counts the number of objects written to it and
-// discards them.
-class counting_iterator {
- private:
-  size_t count_;
-
- public:
-  using iterator_category = std::output_iterator_tag;
-  using difference_type = std::ptrdiff_t;
-  using pointer = void;
-  using reference = void;
-  FMT_UNCHECKED_ITERATOR(counting_iterator);
-
-  struct value_type {
-    template <typename T> FMT_CONSTEXPR void operator=(const T&) {}
-  };
-
-  FMT_CONSTEXPR counting_iterator() : count_(0) {}
-
-  FMT_CONSTEXPR auto count() const -> size_t { return count_; }
-
-  FMT_CONSTEXPR auto operator++() -> counting_iterator& {
-    ++count_;
-    return *this;
-  }
-  FMT_CONSTEXPR auto operator++(int) -> counting_iterator {
-    auto it = *this;
-    ++*this;
-    return it;
-  }
-
-  FMT_CONSTEXPR friend auto operator+(counting_iterator it, difference_type n)
-      -> counting_iterator {
-    it.count_ += static_cast<size_t>(n);
-    return it;
-  }
-
-  FMT_CONSTEXPR auto operator*() const -> value_type { return {}; }
-};
-
 template <typename Char, typename OutputIt>
 FMT_CONSTEXPR auto write(OutputIt out, basic_string_view<Char> s,
                          const format_specs& specs) -> OutputIt {
@@ -2285,7 +2249,11 @@ FMT_CONSTEXPR auto write(OutputIt out, basic_string_view<Char> s,
   bool is_debug = specs.type == presentation_type::debug;
   size_t width = 0;
 
-  if (is_debug) size = write_escaped_string(counting_iterator{}, s).count();
+  if (is_debug) {
+    auto buf = counting_buffer<Char>();
+    write_escaped_string(basic_appender<Char>(buf), s);
+    size = buf.count();
+  }
 
   if (specs.width != 0) {
     if (is_debug)
@@ -2331,7 +2299,7 @@ FMT_CONSTEXPR auto write(OutputIt out, T value) -> OutputIt {
     return out;
   }
   if (negative) *out++ = static_cast<Char>('-');
-  return format_decimal<Char>(out, abs_value, num_digits).end;
+  return format_decimal<Char>(out, abs_value, num_digits);
 }
 
 // DEPRECATED!
@@ -2462,7 +2430,7 @@ constexpr auto write_significand(OutputIt out, const char* significand,
 template <typename Char, typename OutputIt, typename UInt>
 inline auto write_significand(OutputIt out, UInt significand,
                               int significand_size) -> OutputIt {
-  return format_decimal<Char>(out, significand, significand_size).end;
+  return format_decimal<Char>(out, significand, significand_size);
 }
 template <typename Char, typename OutputIt, typename T, typename Grouping>
 FMT_CONSTEXPR20 auto write_significand(OutputIt out, T significand,
@@ -2482,8 +2450,7 @@ template <typename Char, typename UInt,
           FMT_ENABLE_IF(std::is_integral<UInt>::value)>
 inline auto write_significand(Char* out, UInt significand, int significand_size,
                               int integral_size, Char decimal_point) -> Char* {
-  if (!decimal_point)
-    return format_decimal(out, significand, significand_size).end;
+  if (!decimal_point) return format_decimal(out, significand, significand_size);
   out += significand_size + 1;
   Char* end = out;
   int floating_size = significand_size - integral_size;
@@ -3925,7 +3892,7 @@ class format_int {
   template <typename UInt>
   FMT_CONSTEXPR20 auto format_unsigned(UInt value) -> char* {
     auto n = static_cast<detail::uint32_or_64_or_128_t<UInt>>(value);
-    return detail::format_decimal(buffer_, n, buffer_size - 1).begin;
+    return detail::do_format_decimal(buffer_, n, buffer_size - 1);
   }
 
   template <typename Int>
