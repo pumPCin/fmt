@@ -523,7 +523,7 @@ template <typename OutputIt,
 #if FMT_CLANG_VERSION >= 307 && !FMT_ICC_VERSION
 __attribute__((no_sanitize("undefined")))
 #endif
-inline auto
+FMT_CONSTEXPR20 inline auto
 reserve(OutputIt it, size_t n) -> typename OutputIt::value_type* {
   auto& c = get_container(it);
   size_t size = c.size();
@@ -532,7 +532,8 @@ reserve(OutputIt it, size_t n) -> typename OutputIt::value_type* {
 }
 
 template <typename T>
-inline auto reserve(basic_appender<T> it, size_t n) -> basic_appender<T> {
+FMT_CONSTEXPR20 inline auto reserve(basic_appender<T> it, size_t n)
+    -> basic_appender<T> {
   buffer<T>& buf = get_container(it);
   buf.try_reserve(buf.size() + n);
   return it;
@@ -551,7 +552,8 @@ template <typename T, typename OutputIt>
 constexpr auto to_pointer(OutputIt, size_t) -> T* {
   return nullptr;
 }
-template <typename T> auto to_pointer(basic_appender<T> it, size_t n) -> T* {
+template <typename T>
+FMT_CONSTEXPR20 auto to_pointer(basic_appender<T> it, size_t n) -> T* {
   buffer<T>& buf = get_container(it);
   auto size = buf.size();
   buf.try_reserve(size + n);
@@ -929,7 +931,7 @@ class basic_memory_buffer : public detail::buffer<T> {
 
   using detail::buffer<T>::append;
   template <typename ContiguousRange>
-  void append(const ContiguousRange& range) {
+  FMT_CONSTEXPR20 void append(const ContiguousRange& range) {
     append(range.data(), range.data() + range.size());
   }
 };
@@ -2315,7 +2317,6 @@ FMT_CONSTEXPR auto write(OutputIt out, T value) -> OutputIt {
   return format_decimal<Char>(out, abs_value, num_digits);
 }
 
-// DEPRECATED!
 template <typename Char>
 FMT_CONSTEXPR auto parse_align(const Char* begin, const Char* end,
                                format_specs& specs) -> const Char* {
@@ -4068,12 +4069,16 @@ template <typename T, typename Char = char> struct nested_formatter {
 
   FMT_CONSTEXPR auto parse(basic_format_parse_context<Char>& ctx)
       -> decltype(ctx.begin()) {
-    auto specs = detail::dynamic_format_specs<Char>();
-    auto it = parse_format_specs(ctx.begin(), ctx.end(), specs, ctx,
-                                 detail::type::none_type);
-    width_ = specs.width;
+    auto it = ctx.begin(), end = ctx.end();
+    if (it == end) return it;
+    auto specs = format_specs();
+    it = detail::parse_align(it, end, specs);
     fill_ = specs.fill;
     align_ = specs.align;
+    Char c = *it;
+    auto width_ref = detail::arg_ref<Char>();
+    if ((c >= '0' && c <= '9') || c == '{')
+      it = detail::parse_dynamic_spec(it, end, width_, width_ref, ctx);
     ctx.advance_to(it);
     return formatter_.parse(ctx);
   }
